@@ -46,7 +46,7 @@ All portal submission strings, round-by-round. Format: `x1-x2-...-xn` (6 decimal
 | F2 | 2 | `0.695000-0.396000` | 0.5264 |
 | F3 | 3 | `0.300000-0.500000-0.700000` | −0.1140 |
 | F4 | 4 | `0.440000-0.425000-0.378000-0.397000` | 0.2748 ✓ best |
-| F5 | 4 | `0.000000-0.850000-0.999999-0.999999` | 2932.695 ✓ best |
+| F5 | 4 | `0.000000-0.850000-0.999999-0.999999` | 2932.695 |
 | F6 | 5 | `0.500000-0.500000-0.500000-0.500000-0.500000` | −1.0159 |
 | F7 | 6 | `0.000000-0.242000-0.328000-0.218000-0.375000-0.748000` | 2.2072 |
 | F8 | 8 | `0.064000-0.008000-0.120000-0.000000-0.999999-0.382000-0.031000-0.806000` | 9.8592 |
@@ -59,7 +59,7 @@ All portal submission strings, round-by-round. Format: `x1-x2-...-xn` (6 decimal
 
 | Function | d | Query String | Y (portal feedback) |
 |----------|---|-------------|-------------------|
-| F1 | 2 | `0.500000-0.500000` | 2.6753e-9 ✓ best |
+| F1 | 2 | `0.500000-0.500000` | 2.6753e-9 |
 | F2 | 2 | `0.700000-0.200000` | 0.5814 |
 | F3 | 3 | `0.950000-0.010000-0.990000` | −0.4594 |
 | F4 | 4 | `0.999999-0.000000-0.000000-0.700000` | −30.894 |
@@ -76,30 +76,49 @@ All portal submission strings, round-by-round. Format: `x1-x2-...-xn` (6 decimal
 
 | Function | d | Query String | Strategy | Y (portal feedback) |
 |----------|---|-------------|---------|-------------------|
-| F1 | 2 | `0.472781-0.505546` | GP-EI free exploration | *pending* |
-| F2 | 2 | `0.695211-0.395970` | GP-EI tight exploit | *pending* |
-| F3 | 3 | `0.511275-0.215264-0.371049` | GP-EI exploit near R1 | *pending* |
-| F4 | 4 | `0.455000-0.415000-0.385000-0.395000` | Manual interior perturbation | *pending* |
-| F5 | 4 | `0.000000-0.999999-0.999999-0.999999` | GP-EI + NN x2-dominant push | *pending* |
-| F6 | 5 | `0.758817-0.272673-0.522143-0.999999-0.000000` | GP-EI x4/x5 pattern | *pending* |
-| F7 | 6 | `0.000000-0.260000-0.340000-0.232000-0.395000-0.752000` | Manual + NN gradient nudge | *pending* |
-| F8 | 8 | `0.040000-0.000000-0.090000-0.005000-0.999999-0.367013-0.020000-0.780000` | GP-EI tight exploit | *pending* |
+| F1 | 2 | `0.472781-0.505546` | GP-EI free exploration | 8.1686e-8 ✓ best |
+| F2 | 2 | `0.695211-0.395970` | GP-EI tight exploit | 0.6239 |
+| F3 | 3 | `0.511275-0.215264-0.371049` | GP-EI exploit near R1 | −0.0707 ✓ best |
+| F4 | 4 | `0.455000-0.415000-0.385000-0.395000` | Manual interior perturbation | −0.3997 |
+| F5 | 4 | `0.000000-0.999999-0.999999-0.999999` | GP-EI + NN x2-dominant push | 4440.481 ✓ best |
+| F6 | 5 | `0.758817-0.272673-0.522143-0.999999-0.000000` | GP-EI x4/x5 pattern | −0.9106 |
+| F7 | 6 | `0.000000-0.260000-0.340000-0.232000-0.395000-0.752000` | Manual + NN gradient nudge | 2.1133 |
+| F8 | 8 | `0.040000-0.000000-0.090000-0.005000-0.999999-0.367013-0.020000-0.780000` | GP-EI tight exploit | 9.8387 |
 
 **Methodology**: Corrected maximisation EI (`y_best = max(Y)`). GP Matérn-5/2 ARD + WhiteKernel. NN gradient analysis for f5, f7. Per-function bounds constraints from landscape analysis.
 
+**Round 5 highlights**: f1 new best (surpassed R4 centre-point); f3 new best (−0.07 vs −0.09 R1); f5 major breakthrough (4440 vs 2933 R3) — x2→1 confirmed as dominant driver.
+
 ---
 
-## Best Results Summary (through Round 4)
+## Round 6 — W17 | Submitted: 01/05/2026
+
+| Function | d | Query String | Strategy | Y (portal feedback) |
+|----------|---|-------------|---------|-------------------|
+| F1 | 2 | `0.445562-0.511092` | GP-EI exploit near R5 best | *pending* |
+| F2 | 2 | `0.693000-0.397000` | GP-EI tight exploit near R1 | *pending* |
+| F3 | 3 | `0.490000-0.230000-0.395000` | GP-EI exploit near R5 best | *pending* |
+| F4 | 4 | `0.430000-0.430000-0.375000-0.400000` | Manual interior perturbation near R3 | *pending* |
+| F5 | 4 | `0.005000-0.999999-0.999999-0.999999` | GP-EI push x1→0, x2=x3=x4→1 | *pending* |
+| F6 | 5 | `0.450000-0.240000-0.580000-0.999999-0.000000` | GP-EI exploit R1 x4/x5 pattern | *pending* |
+| F7 | 6 | `0.000000-0.238000-0.325000-0.215000-0.370000-0.743000` | GP-EI exploit near R1/R5 cluster | *pending* |
+| F8 | 8 | `0.063000-0.008000-0.123000-0.000000-0.999999-0.382000-0.031000-0.807000` | GP-EI tight exploit near R1 best | *pending* |
+
+**Methodology**: GP Matérn-5/2 ARD + WhiteKernel, maximisation EI (`y_best = max(Y)`), 35-restart L-BFGS-B. Exploitation-dominant round: all 8 functions queried in the neighbourhood of their current best, with targeted micro-perturbations on f5 (x1 nudged from 0 to 0.005) and f7/f8 (sub-1% adjustments to active dimensions).
+
+---
+
+## Best Results Summary (through Round 5)
 
 | Function | Best Y | Best Round | Best Query |
 |----------|--------|------------|-----------|
-| F1 | 2.6753e-9 | R4 | `0.500000-0.500000` |
+| F1 | 8.1686e-8 | R5 | `0.472781-0.505546` |
 | F2 | 0.7237 | R1 | `0.695196-0.395970` |
-| F3 | −0.0891 | R1 | `0.548145-0.174647-0.303245` |
+| F3 | −0.0707 | R5 | `0.511275-0.215264-0.371049` |
 | F4 | 0.2748 | R3 | `0.440000-0.425000-0.378000-0.397000` |
-| F5 | 2932.695 | R3 | `0.000000-0.850000-0.999999-0.999999` |
+| F5 | 4440.481 | R5 | `0.000000-0.999999-0.999999-0.999999` |
 | F6 | −0.5508 | R1 | `0.464677-0.242110-0.574863-0.999999-0.000000` |
 | F7 | 2.2073 | R1 | `0.000000-0.241713-0.327655-0.218095-0.375335-0.747501` |
 | F8 | 9.8595 | R1 | `0.064016-0.008062-0.123268-0.000000-0.999999-0.381742-0.031402-0.806010` |
 
-*Updated after each round's portal feedback.*
+*Updated after each round's portal feedback. R6 feedback pending.*
