@@ -182,6 +182,171 @@ Round 4 used minimisation EI (`y_best = min(Y)`), causing four functions to dete
 This model is used exclusively for academic purposes within a controlled educational exercise. The synthetic functions have no real-world consequences. No personal data, proprietary information, or sensitive materials are involved.
 
 ---
+--------------------------
+--------------------------------------------
+# Model Card — GP-EI BBO Surrogate
+
+**Author:** Gian Franco Cattaneo | Imperial Business School Executive Master ML/AI  
+**Last updated:** May 2026 | Round 8 submitted (W19) — 56 observations total (7 rounds × 8 functions)
+
+---
+
+## Model Summary
+
+| Attribute | Value |
+|---|---|
+| Surrogate type | Gaussian Process Regressor |
+| Kernel | ConstantKernel (amplitude) × Matérn-5/2 ARD + WhiteKernel |
+| Input scaling | StandardScaler (zero mean, unit variance per dimension) |
+| Y scaling | `normalize_y=True` in GPR (internal standardisation) |
+| Acquisition function | Expected Improvement — **maximisation** formulation, ξ = 0.01 |
+| EI optimiser | L-BFGS-B, 35 restarts; warm-start from top-35 of 5,000 random candidates |
+| GP hyperparameter fitting | Marginal log-likelihood maximisation, 10 L-BFGS-B restarts (`n_restarts_optimizer=10`) |
+| Random seed | 42 (all stochastic components) |
+| Implementation | scikit-learn ≥1.3, scipy ≥1.11, numpy ≥1.24 |
+
+> **W19 update:** Kernel upgraded with an explicit `ConstantKernel` amplitude factor,
+> decoupling signal scale from Matérn length-scales. Acquisition warm-start revised:
+> 5,000 random candidates are evaluated first; the top-35 by EI value seed L-BFGS-B,
+> replacing the prior pure random start approach.
+
+---
+
+## EI Formula (Maximisation)
+
+```
+EI(x) = (μ(x) − y* − ξ) · Φ(Z) + σ(x) · φ(Z)
+where Z = (μ(x) − y* − ξ) / σ(x)
+      y* = max(y_observed)   ← MAXIMISATION (not minimisation)
+      ξ  = 0.01              ← exploration offset
+```
+
+> **Critical note:** Round 4 contained a minimisation bug (`y_best = np.min(y)`)
+> corrected in Round 5. All Rounds 5–8 results use the maximisation formulation above.
+
+---
+
+## Kernel Specification
+
+```python
+kernel = (
+    ConstantKernel(
+        constant_value=1.0,
+        constant_value_bounds=(1e-3, 1e3)   # W19: amplitude factor added
+    )
+    * Matern(
+        length_scale=np.ones(d),             # ARD: one θⱼ per dimension
+        length_scale_bounds=(1e-3, 10.0),
+        nu=2.5                               # twice-differentiable (Stein 1999)
+    )
+    + WhiteKernel(
+        noise_level=1e-4,
+        noise_level_bounds=(1e-8, 1e-1)     # W19: upper bound tightened from 1e1
+    )
+)
+```
+
+**W19 kernel change rationale:**
+- *ConstantKernel addition:* decouples signal amplitude from the Matérn
+  length-scales. In W18, amplitude was implicitly absorbed into length-scale
+  hyperparameters, creating identifiability pressure in exploit clusters where
+  Δ‖x‖ < 0.02. The explicit amplitude parameter restores orthogonality between
+  scale and shape.
+- *WhiteKernel upper bound tightened (1e1 → 1e-1):* with 7 rounds confirmed
+  deterministic oracle, excessive noise capacity risks absorbing genuine signal
+  near the f3/f7 converging gradients.
+
+---
+
+## Acquisition Optimisation — W19 Architecture
+
+```
+Warm-start protocol (R8):
+1. Draw 5,000 uniform random candidates over [0, 0.999999]^d
+2. Evaluate EI at all 5,000 points (GP forward pass, vectorised)
+3. Select top-35 by EI value as L-BFGS-B starting points
+4. Run 35 × L-BFGS-B (maxiter=500, ftol=1e-12)
+5. Return argmax across all 35 local optima
+```
+
+Compared to the W18 protocol (35 pure random starts), this warm-start approach
+concentrates gradient descent in the high-EI region of the acquisition landscape,
+reducing wasted starts in the near-zero EI plateau that dominates most of the domain
+in late exploitation rounds.
+
+---
+
+## Known Limitations
+
+| Function | Limitation | Status after R7 | Mitigation in R8 |
+|---|---|---|---|
+| f1 (d=2) | Near-zero outputs across all 7 rounds; GP surface effectively flat | R7 = 1.31e-7 (new best; magnitude ≈ 0) | Manual exploit-nudge near R7 cluster |
+| f2 (d=2) | Sharp local peak; near-identical R1/R3 inputs yield Δy = 0.20 | R1 still best (0.7237); R7 = 0.487 | Probe x2 = 0.394 (below R1's 0.396) |
+| f4 (d=4) | Bimodal surface (interior ≈ +0.46 vs corner ≤ −30); R7 overshot | R6 confirmed local max (0.4636); R7 = 0.363 | Fine exploit between R3 and R6 |
+| f5 (d=4) | Converged at corner [0,1,1,1]; R5=R6=R7=4440.48 | Global max confirmed; 3-round plateau | Hold position |
+| f6 (d=5) | R1 still best (−0.5508); all subsequent probes inferior | R7 = −0.636 — worst so far in active region | Fine probe x1 ↓ from R1; x4=1, x5=0 fixed |
+| f8 (d=8) | Near-plateau; 9 ARD hyperparameters from 7 points — underdetermined | R7 = 9.8596 via x3 nudge (0.123→0.124) | Increment x3: 0.124→0.126 |
+| All | Oracle deterministic; WhiteKernel models numerical precision only | — | `noise_level_bounds=(1e-8, 1e-1)` |
+
+---
+
+## HEBO Design Principles — Mapping to This Implementation
+
+| HEBO Component | This Project Analogue | W19 Status |
+|---|---|---|
+| Matérn-5/2 ARD kernel | Per-dimension length-scale in `build_kernel()` | Retained |
+| ConstantKernel amplitude | Explicit signal scale, decoupled from shape | **Added W19** |
+| WhiteKernel noise floor | Explicit noise bounds | Updated bounds |
+| Maximisation EI (ξ=0.01) | `expected_improvement()`: `y_best = np.max(y)` | Confirmed correct from R5 |
+| Multi-restart L-BFGS-B | `optimise_acquisition()` with `n_restarts=35` | **Warm-start upgraded W19** |
+| MACE Pareto ensemble (implicit) | Per-function strategy blend | EI + directional + hold |
+| Input warping | Not applied | Under consideration for f1 |
+
+> Reference: Cowen-Rivers et al. (2022). *HEBO: Pushing the Limits of Sample-Efficient
+> Hyperparameter Optimisation*. JAIR. Winner of NeurIPS 2020 BBO challenge.
+
+---
+
+## Convergence Status (after Round 7)
+
+| Function | Status | Evidence | R8 Strategy |
+|---|---|---|---|
+| F1 | Plateau — near-zero everywhere | R7 = 1.31e-7 (new best; effectively 0) | Exploit-nudge near R7 cluster |
+| F2 | Plateau — sharp local peak | R7 = 0.487; R1 still best (0.724) | Probe x2 = 0.394 |
+| F3 | **Active improvement** — monotone Δ≈+0.018/round | R5→R6→R7: −0.071→−0.053→−0.035 | Directional: x1↓ x3↑ |
+| F4 | Local max confirmed at R6 | R7 regression: 0.363 < R6's 0.464 | Fine exploit between R3 and R6 |
+| F5 | **Converged** — global max confirmed | R5=R6=R7=4440.48; 3-round plateau | Hold [0,1,1,1] corner |
+| F6 | Stalled — R1 holds; probes consistently inferior | R7 = −0.636 (below R1's −0.551) | Fine probe x1 ↓ from R1 |
+| F7 | **Active improvement** — uniform gradient | R1→R7: 2.207→2.250; x1=0 locked | Continue −0.003 step |
+| F8 | Near-plateau — x3 the only active gradient | R7 = 9.8596 via x3 nudge | Increment x3: 0.124→0.126 |
+
+---
+
+## GP Posterior at Round 8 Query Points
+
+| Function | y_best (obs) | μ (pred) | σ (pred) | EI | Mode |
+|---|---|---|---|---|---|
+| F1 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | Exploit-nudge |
+| F2 | 0.723740 | 0.528056 | 0.032649 | 0.000000 | Exploit-probe |
+| F3 | −0.035298 | −0.019700 | 0.003575 | 0.005688 | Directional |
+| F4 | 0.463617 | 0.466031 | 0.007710 | 0.000662 | Fine-exploit |
+| F5 | 4440.482960 | 4440.480858 | 0.192970 | 0.071084 | Hold-max |
+| F6 | −0.550775 | −0.591326 | 0.049662 | 0.003999 | Fine-exploit |
+| F7 | 2.250193 | 2.260488 | 0.001319 | 0.000687 | Directional |
+| F8 | 9.859577 | 9.859639 | 0.000208 | 0.000000 | x3 gradient |
+
+> F3 (EI = 0.005688) and F7 (EI = 0.000687) are the only functions with
+> meaningful predicted improvement — consistent with their confirmed directional
+> gradients. F4 (μ = 0.466 > y_best = 0.464, σ = 0.008) shows a positive but
+> tight exploitation signal.
+
+---
+
+## Reproducibility
+
+All notebooks are fully executable with `jupyter nbconvert --execute`. Output figures and
+submission strings are deterministic given `random_state=42` and `np.random.seed(42)`.
+
 
 ## Citation
 
