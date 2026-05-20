@@ -5,7 +5,7 @@
 
 ---
 
-## Non-Technical Summary (~100 words)
+## Non-Technical Summary
 
 This project applies Bayesian optimisation to eight unknown mathematical functions, each accepting between two and eight numerical inputs and returning a single score. The goal is to find the input combination that produces the highest score, using as few experiments as possible — much like tuning a complex industrial process without being able to see inside it. A Gaussian Process surrogate model learns from each result to predict where the next best experiment should be run. Across five submission rounds, the algorithm progressively refined its search, achieving consistent improvements on six of eight functions. The project demonstrates how data-efficient optimisation can replace exhaustive trial-and-error in real-world engineering and business contexts.
 
